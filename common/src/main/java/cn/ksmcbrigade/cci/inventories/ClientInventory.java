@@ -12,6 +12,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -20,10 +21,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,15 +46,29 @@ public class ClientInventory extends ContainerScreen {
         super(pMenu, Minecraft.getInstance().player.getInventory(), Component.literal("ClientInventory"));
         this.rows = pMenu.getRowCount();
         this.size = this.rows*9-1;
+
+        if(rows==3){
+            imageHeight = 166;
+            ++this.imageHeight;
+        }
+        else{
+            this.imageHeight = 114 + this.rows * 18;
+        }
+        this.inventoryLabelY = this.imageHeight - 94;
         this.load();
     }
 
     @Override
-    protected void renderBg(GuiGraphics pGuiGraphics, float pPartialTick, int pMouseX, int pMouseY) {
+    protected void renderBg(@NotNull GuiGraphics pGuiGraphics, float pPartialTick, int pMouseX, int pMouseY) {
         int i = (this.width - this.imageWidth) / 2;
         int j = (this.height - this.imageHeight) / 2;
-        pGuiGraphics.blit(size==53?CONTAINER_BACKGROUND:CONTAINER_27_BACKGROUND, i, j, 0, 0, this.imageWidth, this.rows * 18 + 17);
-        pGuiGraphics.blit(size==53?CONTAINER_BACKGROUND:CONTAINER_27_BACKGROUND, i, j + this.rows * 18 + 17, 0, 126, this.imageWidth, 96);
+        if(rows!=3){
+            pGuiGraphics.blit(CONTAINER_BACKGROUND, i, j, 0, 0, this.imageWidth, this.rows * 18 + 17);
+            pGuiGraphics.blit(CONTAINER_BACKGROUND, i, j + this.rows * 18 + 17, 0, 126, this.imageWidth, 96);
+        }
+        else{
+            pGuiGraphics.blit(CONTAINER_27_BACKGROUND, i, j, 0, 0, this.imageWidth, this.imageHeight);
+        }
     }
 
     @Override
@@ -81,8 +93,8 @@ public class ClientInventory extends ContainerScreen {
                 abstractcontainermenu.clicked(pSlotId, pMouseButton, pType, this.minecraft.player);
 
             }
-            if(pSlotId>53){
-                int inventoryId = Math.abs(pSlotId-54+9);
+            if(pSlotId>size){
+                int inventoryId = Math.abs(pSlotId-(size+1)+9);
                 if(this.minecraft.player.isCreative()){
                     Minecraft.getInstance().getConnection().getConnection().send(new ServerboundSetCreativeModeSlotPacket(inventoryId,pSlot.getItem()));
                 }
@@ -112,7 +124,7 @@ public class ClientInventory extends ContainerScreen {
     public void save() throws IOException {
         JsonArray array = new JsonArray();
         for (Slot slot : this.menu.slots) {
-            if(slot.index>53) break;
+            if(slot.index>size) break;
             JsonObject object = new JsonObject();
             object.addProperty("slot",slot.index);
             object.addProperty("item",slot.getItem().getItem().toString());
@@ -133,6 +145,7 @@ public class ClientInventory extends ContainerScreen {
             if(element instanceof JsonObject jsonObject){
                 try {
                     int slot = jsonObject.get("slot").getAsInt();
+                    if(slot>size) continue;
                     Dynamic<JsonElement> jsonDynamic = new Dynamic<>(JsonOps.INSTANCE,jsonObject.get("tags"));
                     Dynamic<Tag> nbtDynamic = jsonDynamic.convert(NbtOps.INSTANCE);
                     ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(jsonObject.get("item").getAsString())),jsonObject.get("count").getAsInt());

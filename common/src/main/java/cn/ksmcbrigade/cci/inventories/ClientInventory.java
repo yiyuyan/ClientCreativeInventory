@@ -42,7 +42,7 @@ public class ClientInventory extends ContainerScreen {
     private final int rows;
 
     private static final ResourceLocation CONTAINER_BACKGROUND = ResourceLocation.withDefaultNamespace("textures/gui/container/generic_54.png");
-    private static final ResourceLocation CONTAINER_27_BACKGROUND = ResourceLocation.withDefaultNamespace("textures/gui/container/shulker_box.png.png");
+    private static final ResourceLocation CONTAINER_27_BACKGROUND = ResourceLocation.withDefaultNamespace("textures/gui/container/shulker_box.png");
 
     public ClientInventory(ChestMenu pMenu) throws IOException {
         super(pMenu, Minecraft.getInstance().player.getInventory(), Component.literal("ClientInventory"));
